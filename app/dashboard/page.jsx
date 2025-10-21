@@ -1,7 +1,4 @@
 import React from 'react'
-import Header from '../_components/Header'
-import Hero from '../_components/Hero'
-import { SignIn } from '@clerk/nextjs'
 
 function page() {
   return (
