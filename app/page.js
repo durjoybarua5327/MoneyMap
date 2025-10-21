@@ -1,11 +1,11 @@
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import Header from "./_components/Header";
 
 export default function Home() {
   return (
     <div>
-      <h1>Welcome to My Next.js App</h1>
-      <Button> Click me </Button>
+      <Header/>
     </div>
   );
 }
