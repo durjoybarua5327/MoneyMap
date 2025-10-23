@@ -3,8 +3,8 @@ import React from 'react'
 
 function page() {
   return (
-    <div>
-        Dashboard
+    <div className='p-5'>
+      dashboard
     </div>
   )
 }

@@ -1,18 +1,26 @@
-"use client"; // Ensure this runs on the client if using client hooks
+"use client";
 
-import React from "react";
+import React, { useState } from "react";
 import SideNav from "./_components/SideNav";
+import DashBoardHeader from "./_components/DashBoardHeader";
 
-function DashboardLayout({ children }) {
+function DashboardLayout() {
+  const [selectedMenu, setSelectedMenu] = useState("Dashboard");
+
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen p-4">
       <div className="w-[20%] fixed h-screen border-r">
-        <SideNav />
+        <SideNav
+          selectedMenu={selectedMenu}
+          onSelectMenu={setSelectedMenu}
+        />
       </div>
 
-      {/* Right Main Content: 70% width */}
-      <div className="ml-[21%] w-[90%] p-6  min-h-screen">
-        {children}
+      <div className="ml-[21%] w-[90%] p-4 min-h-screen">
+        <DashBoardHeader />
+        <div className="mt-6">
+          <h1 className="text-3xl font-bold">{selectedMenu}</h1>
+        </div>
       </div>
     </div>
   );
