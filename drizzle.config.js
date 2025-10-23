@@ -7,6 +7,6 @@ module.exports = defineConfig({
   schema: "./utils/schema.jsx",
   out: "./drizzle",
   dbCredentials: {
-    url: process.env.NEXT_PUBLIC_DATABASE_URL, 
+    url: process.env.DATABASE_URL, 
   },
 });
