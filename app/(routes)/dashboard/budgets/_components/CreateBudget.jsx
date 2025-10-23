@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import React, { useState, useEffect } from 'react';
 import Picker from 'emoji-picker-react';
 import { useUser } from "@clerk/nextjs";
@@ -14,6 +14,7 @@ function CreateBudget() {
   });
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [budgetSuggestions, setBudgetSuggestions] = useState([]);
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
 
   const openDialog = () => setIsDialogOpen(true);
   const closeDialog = () => setIsDialogOpen(false);
@@ -38,6 +39,18 @@ function CreateBudget() {
 
     fetchBudgets();
   }, [user]);
+
+  // Update filtered suggestions as user types
+  useEffect(() => {
+    if (formData.name.trim() === '') {
+      setFilteredSuggestions([]);
+    } else {
+      const filtered = budgetSuggestions.filter(name =>
+        name.toLowerCase().includes(formData.name.toLowerCase())
+      );
+      setFilteredSuggestions(filtered);
+    }
+  }, [formData.name, budgetSuggestions]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -75,9 +88,7 @@ function CreateBudget() {
         toast.custom(
           (t) => (
             <div
-              className={`${
-                t.visible ? 'animate-enter' : 'animate-leave'
-              } max-w-md w-full bg-green-400 text-white rounded-lg shadow-lg p-4 flex items-center space-x-3`}
+              className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-green-400 text-white rounded-lg shadow-lg p-4 flex items-center space-x-3`}
             >
               <span className="text-2xl">✅</span>
               <div>
@@ -93,61 +104,31 @@ function CreateBudget() {
         setBudgetSuggestions(prev => [...new Set([...prev, formData.name])]);
         closeDialog();
       } else {
-        toast.custom(
-          (t) => (
-            <div
-              className={`${
-                t.visible ? 'animate-enter' : 'animate-leave'
-              } max-w-md w-full bg-red-600 text-white rounded-lg shadow-lg p-4 flex items-center space-x-3`}
-            >
-              <span className="text-2xl">❌</span>
-              <div>
-                <p className="font-bold">Error!</p>
-                <p>{data.error || "Failed to create budget"}</p>
-              </div>
-            </div>
-          ),
-          { position: "bottom-right" }
-        );
+        toast.error(data.error || "Failed to create budget", { position: "bottom-right" });
       }
     } catch (err) {
-      toast.custom(
-        (t) => (
-          <div
-            className={`${
-              t.visible ? 'animate-enter' : 'animate-leave'
-            } max-w-md w-full bg-red-600 text-white rounded-lg shadow-lg p-4 flex items-center space-x-3`}
-          >
-            <span className="text-2xl">❌</span>
-            <div>
-              <p className="font-bold">Error!</p>
-              <p>Failed to create budget</p>
-            </div>
-          </div>
-        ),
-        { position: "bottom-right" }
-      );
+      toast.error("Failed to create budget", { position: "bottom-right" });
     }
   };
 
   return (
-    <div className="relative">
-      {/* Toaster for toast notifications */}
+    <div className="relative p-4">
       <Toaster position="bottom-right" />
 
       {/* Clickable card */}
-      <div 
-        className='bg-slate-100 p-10 rounded-md items-center flex flex-col border-2 border-dashed cursor-pointer hover:shadow-md'
+      <div
+        className="bg-white p-4 rounded-md shadow-md flex flex-col justify-center items-center cursor-pointer hover:shadow-lg border border-gray-200 hover:scale-105 transform transition-all duration-200"
         onClick={openDialog}
+        style={{ minWidth: '250px', minHeight: '180px' }}
       >
-        <h2 className='text-3xl text-green-600'>+</h2>
-        <h2 className='text-green-700'>Create New Budget</h2>
+        <div className="text-3xl text-green-500">+</div>
+        <h2 className="text-lg font-bold text-green-700 mt-2 text-center ">Create New Budget</h2>
       </div>
 
+      {/* Dialog modal */}
       {isDialogOpen && (
         <>
           <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={closeDialog}></div>
-
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 pointer-events-auto">
               <div className="flex justify-between items-center mb-4">
@@ -155,29 +136,37 @@ function CreateBudget() {
                 <button onClick={closeDialog} className="text-green-500 hover:text-green-700 text-2xl font-bold">×</button>
               </div>
 
-              <form className="space-y-4" onSubmit={handleSubmit}>
-                <div>
+              <form className="space-y-4 relative" onSubmit={handleSubmit}>
+                <div className="relative">
                   <label className="block text-sm font-medium text-green-700 mb-1">Name</label>
-                  <input 
+                  <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                     placeholder="Budget Name"
-                    list="budget-suggestions"
                     required
                   />
-                  <datalist id="budget-suggestions">
-                    {budgetSuggestions.map((name, idx) => (
-                      <option key={idx} value={name} />
-                    ))}
-                  </datalist>
+                  {/* Suggestions dropdown */}
+                  {filteredSuggestions.length > 0 && (
+                    <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-40 overflow-auto shadow-lg">
+                      {filteredSuggestions.map((name, idx) => (
+                        <li
+                          key={idx}
+                          className="px-3 py-2 hover:bg-green-100 cursor-pointer"
+                          onClick={() => setFormData(prev => ({ ...prev, name }))}
+                        >
+                          {name}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-green-700 mb-1">Amount</label>
-                  <input 
+                  <input
                     type="number"
                     name="amount"
                     value={formData.amount}
