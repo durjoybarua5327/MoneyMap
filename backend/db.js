@@ -18,14 +18,15 @@ db.connect((err) => {
   }
 });
 
-// Create budgets table if not exists
+// ✅ Create budgets table with new `date` column
 const createBudgetsTableQuery = `
 CREATE TABLE IF NOT EXISTS budgets (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   amount VARCHAR(50) NOT NULL,
   icon VARCHAR(100),
-  created_by VARCHAR(255) NOT NULL
+  created_by VARCHAR(255) NOT NULL,
+  date DATE DEFAULT (CURRENT_DATE)  -- Added date column with default value as today's date
 );
 `;
 
@@ -37,7 +38,7 @@ db.query(createBudgetsTableQuery, (err, result) => {
   }
 });
 
-// Create expenses table if not exists
+// ✅ Create expenses table with `date` column
 const createExpensesTableQuery = `
 CREATE TABLE IF NOT EXISTS expenses (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -45,6 +46,7 @@ CREATE TABLE IF NOT EXISTS expenses (
   amount VARCHAR(50) NOT NULL,
   budgetId INT NOT NULL,
   created_by VARCHAR(255) NOT NULL,
+  date DATE DEFAULT (CURRENT_DATE),  -- Added date column with default as today's date
   FOREIGN KEY (budgetId) REFERENCES budgets(id) ON DELETE CASCADE
 );
 `;

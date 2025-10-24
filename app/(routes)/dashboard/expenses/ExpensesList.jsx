@@ -1,40 +1,198 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
+import toast, { Toaster } from 'react-hot-toast';
 
-function ExpensesList() {
+const COOLDOWN_TIME = 4;
+
+function ExpensesList({ budgetId }) {
   const [expenses, setExpenses] = useState([]);
+  const [budget, setBudget] = useState(null);
+  const [name, setName] = useState('');
+  const [amount, setAmount] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [isAdding, setIsAdding] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const timerRef = useRef(null);
 
-  const fetchExpenses = async () => {
+  // Clear timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
+  // Cooldown for adding expenses
+  const startCooldown = (seconds = COOLDOWN_TIME) => {
+    setCountdown(seconds);
+    setIsAdding(true);
+
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+          setIsAdding(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  // Fetch budget and expenses
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const res = await axios.get("http://localhost:5000/expenses");
-      setExpenses(res.data);
+      const [budgetRes, expRes] = await Promise.all([
+        axios.get('http://localhost:5000/budgets'),
+        axios.get('http://localhost:5000/expenses'),
+      ]);
+
+      const foundBudget = budgetRes.data.find(b => b.id == budgetId);
+      const filtered = expRes.data.filter(e => e.budgetId == budgetId);
+
+      setBudget(foundBudget || null);
+      setExpenses(filtered || []);
     } catch (err) {
-      console.error("Error fetching expenses:", err);
+      console.error('Error fetching data:', err);
+      toast.error('Failed to fetch budget or expenses.');
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchExpenses();
-  }, []);
+    if (budgetId != null) fetchData();
+  }, [budgetId]);
+
+  // Add new expense
+  const handleAddExpense = async () => {
+    if (isAdding) {
+      toast.error(`Please wait ${countdown}s before adding another expense.`);
+      return;
+    }
+
+    startCooldown();
+
+    if (!name.trim() || !amount.toString().trim()) {
+      toast.error('Please fill all fields');
+      return;
+    }
+
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount)) {
+      toast.error('Amount must be a number');
+      return;
+    }
+    if (parsedAmount <= 0) {
+      toast.error('Amount must be greater than zero');
+      return;
+    }
+
+    const totalSpent = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+    const remaining = parseFloat(budget.amount || 0) - totalSpent;
+
+    if (parsedAmount > remaining) {
+      toast.error(`Amount exceeds remaining budget ($${remaining.toFixed(2)})`);
+      return;
+    }
+
+    try {
+      const res = await axios.post('http://localhost:5000/expenses', {
+        name,
+        amount: parsedAmount,
+        budgetId,
+        created_by: 'User',
+      });
+
+      const newExpense = {
+        id: res.data.id || Date.now(),
+        name,
+        amount: parsedAmount,
+        budgetId,
+        created_by: 'User',
+      };
+
+      setExpenses(prev => [...prev, newExpense]);
+      setName('');
+      setAmount('');
+      toast.success('Expense added successfully!');
+    } catch (err) {
+      console.error('Error adding expense:', err);
+      toast.error('Error adding expense. Please check backend.');
+    }
+  };
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center min-h-[150px] bg-green-50 rounded-xl p-6">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-green-500 mb-4"></div>
+      <p className="text-green-700 font-semibold">Loading budget...</p>
+    </div>
+  );
+
+  if (!budget) return (
+    <p className="text-red-500 font-semibold p-4">No budget found</p>
+  );
+
+  const totalSpent = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+  const remaining = parseFloat(budget.amount) - totalSpent;
+  const progress = (totalSpent / budget.amount) * 100;
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-bold text-green-700 mb-4">Expenses</h2>
-      {expenses.length === 0 ? (
-        <p className="text-gray-500">No expenses found</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {expenses.map(exp => (
-            <div key={exp.id} className="bg-white p-4 rounded-md shadow-md hover:shadow-lg transition-all duration-200">
-              <h3 className="font-bold text-lg">{exp.name}</h3>
-              <p className="text-gray-500">Amount: ${parseFloat(exp.amount).toFixed(2)}</p>
-              <p className="text-gray-400 text-sm">Budget ID: {exp.budgetId}</p>
-              <p className="text-gray-400 text-sm">Created by: {exp.created_by}</p>
-            </div>
-          ))}
+    <div className="w-full flex flex-col gap-6">
+      {/* Toaster for notifications */}
+      <Toaster position="bottom-right" />
+
+      {/* Budget & Add Expense Section */}
+      <div className="flex flex-col md:flex-row justify-between bg-white shadow-lg rounded-2xl p-6 gap-6">
+        {/* Budget Info */}
+        <div className="flex-1">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2 sm:gap-0">
+            <h2 className="text-xl font-bold text-green-700">{budget.name}</h2>
+            <p className="font-semibold text-green-800">${parseFloat(budget.amount).toFixed(2)}</p>
+          </div>
+          <p className="text-gray-600 mb-2">{expenses.length} Items</p>
+          <div className="flex flex-col sm:flex-row justify-between text-sm mb-2 gap-2 sm:gap-0">
+            <span className="text-gray-700">${totalSpent.toFixed(2)} Spent</span>
+            <span className="text-gray-700">${remaining.toFixed(2)} Remaining</span>
+          </div>
+          <div className="w-full bg-gray-200 h-3 rounded-full">
+            <div
+              className="h-3 bg-green-500 rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
         </div>
-      )}
+
+        {/* Add Expense Form */}
+        <div className="flex flex-col gap-3 w-full md:w-64">
+          <input
+            type="text"
+            placeholder="Expense Name"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            className="border rounded-md p-2 focus:outline-green-600 w-full"
+          />
+          <input
+            type="number"
+            placeholder="Amount"
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+            className="border rounded-md p-2 focus:outline-green-600 w-full"
+          />
+          <button
+            onClick={handleAddExpense}
+            disabled={isAdding}
+            className={`relative bg-green-600 text-white rounded-md py-2 hover:bg-green-700 transition-all ${
+              isAdding ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            {isAdding ? `Please wait ${countdown}s...` : 'Add Expense'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

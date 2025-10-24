@@ -7,35 +7,48 @@ import axios from 'axios';
 function BudgetList() {
   const [budgets, setBudgets] = useState([]);
   const [expenses, setExpenses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [budgetRes, expenseRes] = await Promise.all([
+        axios.get('http://localhost:5000/budgets'),
+        axios.get('http://localhost:5000/expenses')
+      ]);
+      setBudgets(budgetRes.data);
+      setExpenses(expenseRes.data);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    axios.get('http://localhost:5000/budgets')
-      .then(res => setBudgets(res.data))
-      .catch(err => console.error(err));
-
-    axios.get('http://localhost:5000/expenses')
-      .then(res => setExpenses(res.data))
-      .catch(err => console.error(err));
+    fetchData();
   }, []);
 
-  const getTotalExpense = (budgetId) => {
-    return expenses
-      .filter(exp => exp.budgetId === budgetId)
-      .reduce((total, exp) => total + parseFloat(exp.amount), 0);
-  }
+  if (loading) return <p className="text-gray-500">Loading budgets...</p>;
 
   return (
     <div className='mt-7'>
-      <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'>
-        <CreateBudget />
+      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+        <CreateBudget onBudgetCreated={fetchData} />
 
-        {budgets.map(budget => (
-          <BudgetItem
-            key={budget.id}
-            budget={budget}
-            totalExpense={getTotalExpense(budget.id)}
-          />
-        ))}
+        {budgets.length === 0 ? (
+          <p className="text-center col-span-full text-green-400">
+            No budgets yet. Create one above!
+          </p>
+        ) : (
+          budgets.map(budget => (
+            <BudgetItem
+              key={budget.id}
+              budget={budget}
+              expenses={expenses} // pass expenses array
+            />
+          ))
+        )}
       </div>
     </div>
   );

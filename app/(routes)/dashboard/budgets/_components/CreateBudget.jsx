@@ -1,20 +1,27 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Picker from 'emoji-picker-react';
 import { useUser } from "@clerk/nextjs";
 import toast, { Toaster } from 'react-hot-toast';
+import Calendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css';
 
-function CreateBudget() {
+function CreateBudget({ onBudgetCreated }) {
   const { user } = useUser();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     amount: '',
-    icon: '💰'
+    icon: '💰',
+    date: new Date() // default to current date
   });
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [budgetSuggestions, setBudgetSuggestions] = useState([]);
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+  const [showCalendar, setShowCalendar] = useState(false);
+
+  const suggestionRef = useRef(null);
+  const inputRef = useRef(null);
 
   const openDialog = () => setIsDialogOpen(true);
   const closeDialog = () => setIsDialogOpen(false);
@@ -22,29 +29,22 @@ function CreateBudget() {
   // Fetch existing budgets for suggestions
   useEffect(() => {
     if (!user) return;
-
     const fetchBudgets = async () => {
       try {
         const response = await fetch(`http://localhost:5000/budgets?user=${user.emailAddresses[0].emailAddress}`);
         const data = await response.json();
-        if (response.ok) {
-          setBudgetSuggestions(data.map(b => b.name));
-        } else {
-          console.error("Failed to fetch budgets:", data.error);
-        }
+        if (response.ok) setBudgetSuggestions(data.map(b => b.name));
       } catch (err) {
         console.error("Error fetching budgets:", err);
       }
     };
-
     fetchBudgets();
   }, [user]);
 
-  // Update filtered suggestions as user types
+  // Filter suggestions dynamically
   useEffect(() => {
-    if (formData.name.trim() === '') {
-      setFilteredSuggestions([]);
-    } else {
+    if (formData.name.trim() === '') setFilteredSuggestions([]);
+    else {
       const filtered = budgetSuggestions.filter(name =>
         name.toLowerCase().includes(formData.name.toLowerCase())
       );
@@ -52,9 +52,28 @@ function CreateBudget() {
     }
   }, [formData.name, budgetSuggestions]);
 
+  // Hide suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        suggestionRef.current && !suggestionRef.current.contains(event.target) &&
+        inputRef.current && !inputRef.current.contains(event.target)
+      ) {
+        setFilteredSuggestions([]);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSuggestionClick = (name) => {
+    setFormData(prev => ({ ...prev, name }));
+    setFilteredSuggestions([]); // hide after selection
   };
 
   const onEmojiClick = (emojiData) => {
@@ -64,7 +83,6 @@ function CreateBudget() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!user) {
       toast.error("You must be logged in to create a budget", { position: "bottom-right" });
       return;
@@ -75,34 +93,21 @@ function CreateBudget() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: formData.name,
-          amount: formData.amount,
+          name: formData.name.trim(),
+          amount: parseFloat(formData.amount) || 0,
           icon: formData.icon,
+          date: formData.date.toISOString().split('T')[0], // send date in YYYY-MM-DD format
           created_by: user.emailAddresses[0].emailAddress
         }),
       });
 
       const data = await response.json();
-
       if (response.ok) {
-        toast.custom(
-          (t) => (
-            <div
-              className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-green-400 text-white rounded-lg shadow-lg p-4 flex items-center space-x-3`}
-            >
-              <span className="text-2xl">✅</span>
-              <div>
-                <p className="font-bold">Budget Created!</p>
-                <p>{formData.name} has been added successfully.</p>
-              </div>
-            </div>
-          ),
-          { position: "bottom-right" }
-        );
-
-        setFormData({ name: "", amount: "", icon: "💰" });
+        toast.success(`Budget "${formData.name}" created!`, { position: "bottom-right" });
+        setFormData({ name: "", amount: "", icon: "💰", date: new Date() });
         setBudgetSuggestions(prev => [...new Set([...prev, formData.name])]);
         closeDialog();
+        if (onBudgetCreated) onBudgetCreated();
       } else {
         toast.error(data.error || "Failed to create budget", { position: "bottom-right" });
       }
@@ -116,16 +121,20 @@ function CreateBudget() {
       <Toaster position="bottom-right" />
 
       {/* Clickable card */}
+
       <div
-        className="bg-white p-4 rounded-md shadow-md flex flex-col justify-center items-center cursor-pointer hover:shadow-lg border border-gray-200 hover:scale-105 transform transition-all duration-200"
+        className="bg-white py-9 px-5  rounded-md shadow-md cursor-pointer 
+             hover:bg-green-100 hover:scale-105 active:scale-95 
+             transform transition-all duration-200
+             flex flex-col justify-center items-center"
         onClick={openDialog}
-        style={{ minWidth: '250px', minHeight: '180px' }}
       >
-        <div className="text-3xl text-green-500">+</div>
-        <h2 className="text-lg font-bold text-green-700 mt-2 text-center ">Create New Budget</h2>
+        <div className="text-3xl text-green-500 mb-2">+</div>
+        <h2 className="text-lg font-bold text-green-400 text-center">Create New Budget</h2>
       </div>
 
-      {/* Dialog modal */}
+
+      {/* Dialog */}
       {isDialogOpen && (
         <>
           <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={closeDialog}></div>
@@ -136,10 +145,12 @@ function CreateBudget() {
                 <button onClick={closeDialog} className="text-green-500 hover:text-green-700 text-2xl font-bold">×</button>
               </div>
 
-              <form className="space-y-4 relative" onSubmit={handleSubmit}>
-                <div className="relative">
+              <form className="space-y-4" onSubmit={handleSubmit}>
+                {/* Name input */}
+                <div className="relative" ref={suggestionRef}>
                   <label className="block text-sm font-medium text-green-700 mb-1">Name</label>
                   <input
+                    ref={inputRef}
                     type="text"
                     name="name"
                     value={formData.name}
@@ -148,14 +159,13 @@ function CreateBudget() {
                     placeholder="Budget Name"
                     required
                   />
-                  {/* Suggestions dropdown */}
                   {filteredSuggestions.length > 0 && (
                     <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-40 overflow-auto shadow-lg">
                       {filteredSuggestions.map((name, idx) => (
                         <li
                           key={idx}
                           className="px-3 py-2 hover:bg-green-100 cursor-pointer"
-                          onClick={() => setFormData(prev => ({ ...prev, name }))}
+                          onClick={() => handleSuggestionClick(name)}
                         >
                           {name}
                         </li>
@@ -164,6 +174,7 @@ function CreateBudget() {
                   )}
                 </div>
 
+                {/* Amount input */}
                 <div>
                   <label className="block text-sm font-medium text-green-700 mb-1">Amount</label>
                   <input
@@ -177,6 +188,7 @@ function CreateBudget() {
                   />
                 </div>
 
+                {/* Emoji picker */}
                 <div>
                   <label className="block text-sm font-medium text-green-700 mb-1">Icon</label>
                   <button
@@ -189,9 +201,44 @@ function CreateBudget() {
                   {showEmojiPicker && <div className="mt-2"><Picker onEmojiClick={onEmojiClick} /></div>}
                 </div>
 
+                {/* Date picker */}
+                <div>
+                  <label className="block text-sm font-medium text-green-700 mb-1">Date (optional)</label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={formData.date.toDateString()}
+                    onClick={() => setShowCalendar(!showCalendar)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                  {showCalendar && (
+                    <div className="mt-2 z-50">
+                      <Calendar
+                        onChange={date => {
+                          setFormData(prev => ({ ...prev, date }));
+                          setShowCalendar(false);
+                        }}
+                        value={formData.date}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
                 <div className="flex justify-end space-x-3 pt-4">
-                  <button type="button" onClick={closeDialog} className="px-4 py-2 text-sm font-medium text-green-700 hover:text-green-900 transition-colors">Cancel</button>
-                  <button type="submit" className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors">Create Budget</button>
+                  <button
+                    type="button"
+                    onClick={closeDialog}
+                    className="px-4 py-2 text-sm font-medium text-green-700 hover:text-green-900 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors"
+                  >
+                    Create Budget
+                  </button>
                 </div>
               </form>
             </div>

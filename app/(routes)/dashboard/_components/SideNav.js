@@ -49,26 +49,28 @@ function SideNav() {
         </div>
       </div>
 
-      {/* User Section */}
       {isSignedIn && user && (
-        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl shadow-inner">
-          <UserButton
-            appearance={{
-              elements: {
-                userButtonAvatarBox: "w-10 h-10 rounded-full",
-                userButtonRoot: "p-0",
-              },
-            }}
-          />
-          <div>
-            <p className="font-semibold text-gray-800">
-              {user.firstName} {user.lastName}
-            </p>
-            <p className="text-sm text-gray-500 truncate">
-              {user.emailAddresses[0]?.emailAddress}
-            </p>
-          </div>
-        </div>
+        <div className="flex flex-col items-center gap-2 p-3 bg-gray-50 rounded-xl shadow-inner w-full">
+  {/* Avatar on top, centered */}
+  <UserButton
+    appearance={{
+      elements: {
+        userButtonAvatarBox: "w-10 h-10 rounded-full",
+        userButtonRoot: "p-0",
+      },
+    }}
+  />
+
+  <div className="text-center break-all w-full">
+    <p className="font-semibold text-gray-800 break-all">
+      {user.firstName} {user.lastName}
+    </p>
+    <p className="text-sm text-gray-500 break-all">
+      {user.emailAddresses[0]?.emailAddress}
+    </p>
+  </div>
+</div>
+
       )}
     </div>
   );
