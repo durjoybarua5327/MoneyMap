@@ -96,7 +96,7 @@ function ExpensesItems({ expenses, setExpenses, budget, setBudget }) {
         ))}
       </ul>
 
-      {/* Delete Confirmation Modal */}
+      {/* 🗑️ Delete Confirmation Modal */}
       {isModalOpen && selectedExpense && (
         <>
           <div
@@ -114,9 +114,24 @@ function ExpensesItems({ expenses, setExpenses, budget, setBudget }) {
                   ×
                 </button>
               </div>
-              <p className="mb-6 text-gray-700">
+
+              <p className="mb-4 text-gray-700">
                 Are you sure you want to delete <strong>{selectedExpense.name}</strong>?
               </p>
+
+              {/* ✅ Show date inside modal */}
+              {selectedExpense.date && (
+                <p className="text-sm text-gray-500 mb-6">
+                  Date:{" "}
+                  {new Date(selectedExpense.date).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </p>
+              )}
+
               <div className="flex justify-end gap-3">
                 <button
                   onClick={closeModal}
