@@ -5,7 +5,7 @@ import ExpensesItems from './ExpensesItems';
 import { useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import BudgetItem from '../budgets/_components/BudgetItem';
-import { Toaster, toast } from 'react-hot-toast';
+import { Toaster } from 'react-hot-toast';
 
 function Page() {
   const searchParams = useSearchParams();
@@ -37,7 +37,6 @@ function Page() {
         setExpenses(filtered);
       } catch (err) {
         console.error('Error fetching data:', err);
-        toast.error('Failed to fetch data');
       } finally {
         setLoading(false);
       }
@@ -45,11 +44,6 @@ function Page() {
 
     fetchData();
   }, [budgetId]);
-
-  const handleExpenseAdded = newExpense => {
-    setExpenses(prev => [...prev, newExpense]);
-    toast.success(`Expense "${newExpense.name}" added!`);
-  };
 
   if (loading)
     return (
@@ -63,7 +57,7 @@ function Page() {
 
   return (
     <div className="p-8 bg-green-50 min-h-screen">
-      <Toaster position="top-right" />
+      <Toaster position="below-right" />
       <h1 className="text-3xl font-bold text-green-800 mb-8 border-b-2 border-green-200 pb-2">
         My All Expenses
       </h1>
@@ -84,7 +78,6 @@ function Page() {
               budget={budget}
               expenses={expenses}
               setExpenses={setExpenses}
-              onExpenseAdded={handleExpenseAdded}
             />
           </div>
         </div>

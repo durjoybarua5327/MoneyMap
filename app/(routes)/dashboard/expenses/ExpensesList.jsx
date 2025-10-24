@@ -1,11 +1,11 @@
 'use client';
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 const COOLDOWN_TIME = 4;
 
-function ExpensesList({ budgetId, budget, expenses: parentExpenses, onExpenseAdded }) {
+function ExpensesList({ budgetId, budget, expenses: parentExpenses, setExpenses }) {
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [isAdding, setIsAdding] = useState(false);
@@ -42,8 +42,6 @@ function ExpensesList({ budgetId, budget, expenses: parentExpenses, onExpenseAdd
       return;
     }
 
-    startCooldown();
-
     if (!name.trim() || !amount.toString().trim()) {
       toast.error('Please fill all fields');
       return;
@@ -63,6 +61,8 @@ function ExpensesList({ budgetId, budget, expenses: parentExpenses, onExpenseAdd
       return;
     }
 
+    startCooldown();
+
     try {
       const res = await axios.post('http://localhost:5000/expenses', {
         name,
@@ -81,10 +81,10 @@ function ExpensesList({ budgetId, budget, expenses: parentExpenses, onExpenseAdd
 
       setName('');
       setAmount('');
-      toast.success('Expense added successfully!');
 
-      // Notify parent to update the state
-      if (onExpenseAdded) onExpenseAdded(newExpense);
+      // Update parent expenses state
+      setExpenses(prev => [...prev, newExpense]);
+      toast.success('Expense added successfully!');
     } catch (err) {
       console.error(err);
       toast.error('Error adding expense. Please check backend.');
@@ -99,8 +99,6 @@ function ExpensesList({ budgetId, budget, expenses: parentExpenses, onExpenseAdd
 
   return (
     <div className="w-full flex flex-col gap-6">
-      <Toaster position="bottom-right" />
-
       {/* Budget Info & Add Expense */}
       <div className="flex flex-col md:flex-row justify-between bg-white shadow-lg rounded-2xl p-6 gap-6">
         <div className="flex-1">
