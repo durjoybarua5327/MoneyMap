@@ -13,7 +13,7 @@ function CreateBudget({ onBudgetCreated }) {
     name: '',
     amount: '',
     icon: '💰',
-    date: new Date() // default to current date
+    date: new Date()
   });
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [budgetSuggestions, setBudgetSuggestions] = useState([]);
@@ -25,6 +25,41 @@ function CreateBudget({ onBudgetCreated }) {
 
   const openDialog = () => setIsDialogOpen(true);
   const closeDialog = () => setIsDialogOpen(false);
+
+  // Custom Toast Functions
+  const successToast = (message) => {
+    toast.success(message, {
+      style: {
+        border: '1px solid #4ADE80',
+        padding: '16px',
+        color: '#065F46',
+        background: 'linear-gradient(135deg, #D1FAE5, #6EE7B7)',
+        borderRadius: '12px',
+        fontWeight: 'bold',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+      },
+      icon: '✅',
+      duration: 4000,
+      position: 'bottom-right',
+    });
+  };
+
+  const errorToast = (message) => {
+    toast.error(message, {
+      style: {
+        border: '1px solid #F87171',
+        padding: '16px',
+        color: '#B91C1C',
+        background: 'linear-gradient(135deg, #FEE2E2, #FCA5A5)',
+        borderRadius: '12px',
+        fontWeight: 'bold',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+      },
+      icon: '⚠️',
+      duration: 4000,
+      position: 'bottom-right',
+    });
+  };
 
   // Fetch existing budgets for suggestions
   useEffect(() => {
@@ -73,7 +108,7 @@ function CreateBudget({ onBudgetCreated }) {
 
   const handleSuggestionClick = (name) => {
     setFormData(prev => ({ ...prev, name }));
-    setFilteredSuggestions([]); // hide after selection
+    setFilteredSuggestions([]);
   };
 
   const onEmojiClick = (emojiData) => {
@@ -84,7 +119,7 @@ function CreateBudget({ onBudgetCreated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) {
-      toast.error("You must be logged in to create a budget", { position: "bottom-right" });
+      errorToast("You must be logged in to create a budget");
       return;
     }
 
@@ -96,23 +131,23 @@ function CreateBudget({ onBudgetCreated }) {
           name: formData.name.trim(),
           amount: parseFloat(formData.amount) || 0,
           icon: formData.icon,
-          date: formData.date.toISOString().split('T')[0], // send date in YYYY-MM-DD format
+          date: formData.date.toISOString().split('T')[0],
           created_by: user.emailAddresses[0].emailAddress
         }),
       });
 
       const data = await response.json();
       if (response.ok) {
-        toast.success(`Budget "${formData.name}" created!`, { position: "bottom-right" });
+        successToast(`Budget "${formData.name}" created!`);
         setFormData({ name: "", amount: "", icon: "💰", date: new Date() });
         setBudgetSuggestions(prev => [...new Set([...prev, formData.name])]);
         closeDialog();
         if (onBudgetCreated) onBudgetCreated();
       } else {
-        toast.error(data.error || "Failed to create budget", { position: "bottom-right" });
+        errorToast(data.error || "Failed to create budget");
       }
     } catch (err) {
-      toast.error("Failed to create budget", { position: "bottom-right" });
+      errorToast("Failed to create budget");
     }
   };
 
@@ -121,10 +156,9 @@ function CreateBudget({ onBudgetCreated }) {
       <Toaster position="bottom-right" />
 
       {/* Clickable card */}
-
       <div
-        className="bg-white py-9 px-5  rounded-md shadow-md cursor-pointer 
-             hover:bg-green-100 hover:scale-105 active:scale-95 
+        className="bg-green-50 py-9 px-5 rounded-md shadow-md cursor-pointer 
+             hover:bg-green-200 hover:scale-105 active:scale-95 
              transform transition-all duration-200
              flex flex-col justify-center items-center"
         onClick={openDialog}
@@ -132,7 +166,6 @@ function CreateBudget({ onBudgetCreated }) {
         <div className="text-3xl text-green-500 mb-2">+</div>
         <h2 className="text-lg font-bold text-green-400 text-center">Create New Budget</h2>
       </div>
-
 
       {/* Dialog */}
       {isDialogOpen && (

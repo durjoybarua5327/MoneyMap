@@ -5,24 +5,13 @@ import toast, { Toaster } from 'react-hot-toast';
 
 const COOLDOWN_TIME = 4;
 
-function ExpensesList({ budgetId }) {
-  const [expenses, setExpenses] = useState([]);
-  const [budget, setBudget] = useState(null);
+function ExpensesList({ budgetId, budget, expenses: parentExpenses, onExpenseAdded }) {
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
-  const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const timerRef = useRef(null);
 
-  // Clear timer on unmount
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, []);
-
-  // Cooldown for adding expenses
   const startCooldown = (seconds = COOLDOWN_TIME) => {
     setCountdown(seconds);
     setIsAdding(true);
@@ -41,33 +30,12 @@ function ExpensesList({ budgetId }) {
     }, 1000);
   };
 
-  // Fetch budget and expenses
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [budgetRes, expRes] = await Promise.all([
-        axios.get('http://localhost:5000/budgets'),
-        axios.get('http://localhost:5000/expenses'),
-      ]);
-
-      const foundBudget = budgetRes.data.find(b => b.id == budgetId);
-      const filtered = expRes.data.filter(e => e.budgetId == budgetId);
-
-      setBudget(foundBudget || null);
-      setExpenses(filtered || []);
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      toast.error('Failed to fetch budget or expenses.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    if (budgetId != null) fetchData();
-  }, [budgetId]);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
 
-  // Add new expense
   const handleAddExpense = async () => {
     if (isAdding) {
       toast.error(`Please wait ${countdown}s before adding another expense.`);
@@ -82,16 +50,12 @@ function ExpensesList({ budgetId }) {
     }
 
     const parsedAmount = parseFloat(amount);
-    if (isNaN(parsedAmount)) {
-      toast.error('Amount must be a number');
-      return;
-    }
-    if (parsedAmount <= 0) {
-      toast.error('Amount must be greater than zero');
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      toast.error('Amount must be a positive number');
       return;
     }
 
-    const totalSpent = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+    const totalSpent = parentExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
     const remaining = parseFloat(budget.amount || 0) - totalSpent;
 
     if (parsedAmount > remaining) {
@@ -115,45 +79,36 @@ function ExpensesList({ budgetId }) {
         created_by: 'User',
       };
 
-      setExpenses(prev => [...prev, newExpense]);
       setName('');
       setAmount('');
       toast.success('Expense added successfully!');
+
+      // Notify parent to update the state
+      if (onExpenseAdded) onExpenseAdded(newExpense);
     } catch (err) {
-      console.error('Error adding expense:', err);
+      console.error(err);
       toast.error('Error adding expense. Please check backend.');
     }
   };
 
-  if (loading) return (
-    <div className="flex flex-col items-center justify-center min-h-[150px] bg-green-50 rounded-xl p-6">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-green-500 mb-4"></div>
-      <p className="text-green-700 font-semibold">Loading budget...</p>
-    </div>
-  );
+  if (!budget) return null;
 
-  if (!budget) return (
-    <p className="text-red-500 font-semibold p-4">No budget found</p>
-  );
-
-  const totalSpent = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+  const totalSpent = parentExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
   const remaining = parseFloat(budget.amount) - totalSpent;
   const progress = (totalSpent / budget.amount) * 100;
 
   return (
     <div className="w-full flex flex-col gap-6">
-      {/* Toaster for notifications */}
       <Toaster position="bottom-right" />
 
-      {/* Budget & Add Expense Section */}
+      {/* Budget Info & Add Expense */}
       <div className="flex flex-col md:flex-row justify-between bg-white shadow-lg rounded-2xl p-6 gap-6">
-        {/* Budget Info */}
         <div className="flex-1">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2 sm:gap-0">
             <h2 className="text-xl font-bold text-green-700">{budget.name}</h2>
             <p className="font-semibold text-green-800">${parseFloat(budget.amount).toFixed(2)}</p>
           </div>
-          <p className="text-gray-600 mb-2">{expenses.length} Items</p>
+          <p className="text-gray-600 mb-2">{parentExpenses.length} Items</p>
           <div className="flex flex-col sm:flex-row justify-between text-sm mb-2 gap-2 sm:gap-0">
             <span className="text-gray-700">${totalSpent.toFixed(2)} Spent</span>
             <span className="text-gray-700">${remaining.toFixed(2)} Remaining</span>
