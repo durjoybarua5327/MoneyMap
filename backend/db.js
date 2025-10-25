@@ -1,56 +1,65 @@
-const mysql = require("mysql2");
+const mysql = require("mysql2/promise");
 const dotenv = require("dotenv");
 dotenv.config();
 
-const db = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT || 3306
-});
+let db;
 
-db.connect((err) => {
-  if (err) {
-    console.error("❌ Error connecting to MySQL:", err);
-  } else {
+async function initDB() {
+  try {
+    // 1️⃣ Connect without database to create it if needed
+    const connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      port: process.env.DB_PORT || 3306,
+    });
+
+    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME}\``);
+    console.log(`✅ Database '${process.env.DB_NAME}' ready`);
+
+    // 2️⃣ Connect to the actual database
+    db = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      port: process.env.DB_PORT || 3306,
+    });
+
     console.log("✅ Connected to MySQL database!");
+
+    // 3️⃣ Create budgets table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS budgets (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        amount VARCHAR(50) NOT NULL,
+        icon VARCHAR(100),
+        created_by VARCHAR(255) NOT NULL,
+        date DATE DEFAULT (CURRENT_DATE)
+      );
+    `);
+    console.log("✅ Budgets table ready");
+
+    // 4️⃣ Create expenses table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS expenses (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        amount VARCHAR(50) NOT NULL,
+        budgetId INT NOT NULL,
+        created_by VARCHAR(255) NOT NULL,
+        date DATE DEFAULT (CURRENT_DATE),
+        FOREIGN KEY (budgetId) REFERENCES budgets(id) ON DELETE CASCADE
+      );
+    `);
+    console.log("✅ Expenses table ready");
+
+    return db;
+  } catch (err) {
+    console.error("❌ Database error:", err);
+    process.exit(1);
   }
-});
+}
 
-// ✅ Create budgets table
-const createBudgetsTableQuery = `
-CREATE TABLE IF NOT EXISTS budgets (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  amount VARCHAR(50) NOT NULL,
-  icon VARCHAR(100),
-  created_by VARCHAR(255) NOT NULL,
-  date DATE DEFAULT (CURRENT_DATE)
-);
-`;
-
-db.query(createBudgetsTableQuery, (err) => {
-  if (err) console.error("Error creating budgets table:", err);
-  else console.log("✅ Budgets table ready");
-});
-
-// ✅ Create expenses table
-const createExpensesTableQuery = `
-CREATE TABLE IF NOT EXISTS expenses (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  amount VARCHAR(50) NOT NULL,
-  budgetId INT NOT NULL,
-  created_by VARCHAR(255) NOT NULL,
-  date DATE DEFAULT (CURRENT_DATE),
-  FOREIGN KEY (budgetId) REFERENCES budgets(id) ON DELETE CASCADE
-);
-`;
-
-db.query(createExpensesTableQuery, (err) => {
-  if (err) console.error("Error creating expenses table:", err);
-  else console.log("✅ Expenses table ready");
-});
-
-module.exports = db;
+module.exports = initDB;

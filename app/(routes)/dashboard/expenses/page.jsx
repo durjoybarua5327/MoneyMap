@@ -31,19 +31,20 @@ function Page() {
     setLoading(true);
     try {
       const [budgetsRes, expensesRes] = await Promise.all([
-        axios.get('http://localhost:5000/budgets'),
+        axios.get('http://localhost:5000/budgets', { params: { created_by: userEmail } }),
         axios.get('http://localhost:5000/expenses', { params: { created_by: userEmail } }),
       ]);
 
       const budgets = budgetsRes.data;
       const selectedBudget = budgetId
         ? budgets.find((b) => b.id === budgetId)
-        : budgets[0] || null;
+        : null;
 
       setBudget(selectedBudget);
 
       let filteredExpenses = expensesRes.data;
-      if (budgetId) filteredExpenses = filteredExpenses.filter((e) => e.budgetId === budgetId);
+      if (budgetId)
+        filteredExpenses = filteredExpenses.filter((e) => e.budgetId === budgetId);
 
       setExpenses(filteredExpenses);
     } catch (err) {
@@ -81,7 +82,7 @@ function Page() {
     setEditForm({
       name: budget.name,
       icon: budget.icon || '',
-      amount: budget.amount,
+      amount: budget.amount || 0, // Default to 0 if undefined
     });
     setIsEditModalOpen(true);
   };
@@ -118,6 +119,7 @@ function Page() {
     setExpenses(prev => prev.map(exp => exp.id === updatedExpense.id ? updatedExpense : exp));
   };
 
+  /* ---------------------- LOADING ---------------------- */
   if (loading)
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-green-50">
@@ -133,53 +135,55 @@ function Page() {
         My Expenses
       </h1>
 
+      {/* Render BudgetItem + ExpensesList only if budget exists */}
       {budget && (
-        <div className="flex justify-end gap-3 mb-2">
-          <button
-            onClick={openEditModal}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 transition"
-          >
-            <Edit3 size={18} /> Edit Budget
-          </button>
-          <button
-            onClick={() => setIsDeleteModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition"
-          >
-            <Trash2 size={18} /> Delete Budget
-          </button>
-        </div>
-      )}
-
-      {budget && (
-        <div className="flex flex-col md:flex-row items-start gap-8 mb-8">
-          <div className="w-full md:w-80">
-            <BudgetItem
-              budget={budget}
-              expenses={expenses}
-              className="bg-white shadow-lg rounded-2xl p-6 border-l-4 border-green-400"
-            />
+        <>
+          <div className="flex justify-end gap-3 mb-2">
+            <button
+              onClick={openEditModal}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 transition"
+            >
+              <Edit3 size={18} /> Edit Budget
+            </button>
+            <button
+              onClick={() => setIsDeleteModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition"
+            >
+              <Trash2 size={18} /> Delete Budget
+            </button>
           </div>
 
-          <div className="w-full md:flex-1 flex flex-col gap-6">
-            <ExpensesList
-              budgetId={budgetId}
-              budget={budget}
-              expenses={expenses}
-              setExpenses={setExpenses}
-              onExpenseAdded={handleAddExpense}
-              onExpenseEdited={handleEditExpense}
-              refreshData={fetchData}
-            />
+          <div className="flex flex-col md:flex-row items-start gap-8 mb-8">
+            <div className="w-full md:w-80">
+              <BudgetItem
+                budget={budget}
+                expenses={expenses.filter(e => e.budgetId === budget.id)}
+                // BudgetItem component should safely handle NaN inside itself
+              />
+            </div>
+
+            <div className="w-full md:flex-1 flex flex-col gap-6">
+              <ExpensesList
+                budgetId={budgetId}
+                budget={budget}
+                expenses={expenses}
+                setExpenses={setExpenses}
+                onExpenseAdded={handleAddExpense}
+                onExpenseEdited={handleEditExpense}
+                refreshData={fetchData}
+              />
+            </div>
           </div>
-        </div>
+        </>
       )}
 
+      {/* Always show ExpensesItems */}
       <div className="bg-white shadow-lg rounded-2xl p-6 border border-green-200">
         <h3 className="text-xl font-semibold mb-4 text-green-800">Latest Expenses</h3>
         <ExpensesItems
           expenses={expenses}
           setExpenses={setExpenses}
-          budget={budget}
+          budget={budget || null}
           setBudget={setBudget}
           refreshData={fetchData}
         />
