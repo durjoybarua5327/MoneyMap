@@ -4,7 +4,7 @@ import { CheckCircle, XCircle } from 'lucide-react';
 
 export default function UpgradePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex flex-col items-center py-16 px-4">
+    <div className="min-h-screen bg-linear-to-b from-green-50 to-white flex flex-col items-center py-16 px-4">
       {/* Hero Section */}
       <h1 className="text-4xl font-bold text-green-800 mb-4 text-center">
         Upgrade to MoneyMap Pro 💎

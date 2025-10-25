@@ -8,30 +8,24 @@ function ExpensesItems({ expenses, setExpenses, budget, setBudget }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState(null);
 
-  // Open modal
   const openModal = (expense) => {
     setSelectedExpense(expense);
     setIsModalOpen(true);
   };
 
-  // Close modal
   const closeModal = () => {
     setSelectedExpense(null);
     setIsModalOpen(false);
   };
 
-  // Delete expense
   const handleDelete = async () => {
     if (!selectedExpense) return;
 
     try {
       const res = await axios.delete(`http://localhost:5000/expenses/${selectedExpense.id}`);
-
-      // Remove from local state
       const newExpenses = expenses.filter(e => e.id !== selectedExpense.id);
       setExpenses(newExpenses);
 
-      // Update budget
       if (budget) {
         const updatedBudget = {
           ...budget,
@@ -51,7 +45,7 @@ function ExpensesItems({ expenses, setExpenses, budget, setBudget }) {
 
   if (!expenses || expenses.length === 0) {
     return (
-      <p className="text-gray-500 text-center py-6">
+      <p className="text-gray-500 text-center py-6 text-lg">
         No expenses found
       </p>
     );
@@ -59,16 +53,23 @@ function ExpensesItems({ expenses, setExpenses, budget, setBudget }) {
 
   return (
     <div className="relative">
-      <ul className="flex flex-col gap-3">
+      <ul className="flex flex-col gap-4">
         {expenses.map(exp => (
           <li
             key={exp.id}
-            className="flex justify-between items-center bg-green-50 shadow-sm rounded-lg p-4 hover:shadow-md hover:bg-green-100 transition-all"
+            className="flex justify-between items-center bg-linear-to-r from-white to-gray-50 shadow-md hover:shadow-xl rounded-2xl p-5 transition-all border border-gray-100"
           >
-            <div className="flex flex-col">
-              <span className="font-semibold text-lg">{exp.name}</span>
+            <div className="flex flex-col gap-1">
+              <span className="font-semibold text-lg text-green-600">{exp.name}</span>
+              
+              {exp.budgetName && (
+                <span className="text-xs font-medium text-indigo-600 bg-indigo-100 px-2 py-1 rounded-full w-fit">
+                  {exp.budgetName}
+                </span>
+              )}
+
               {exp.date && (
-                <span className="text-gray-400 text-sm mt-1">
+                <span className="text-gray-400 text-sm">
                   {new Date(exp.date).toLocaleDateString('en-US', {
                     weekday: 'short',
                     year: 'numeric',
@@ -80,7 +81,7 @@ function ExpensesItems({ expenses, setExpenses, budget, setBudget }) {
             </div>
 
             <div className="flex items-center gap-4">
-              <span className="font-medium text-green-600">
+              <span className="font-semibold text-green-600 text-lg">
                 ${parseFloat(exp.amount).toFixed(2)}
               </span>
 
@@ -89,39 +90,44 @@ function ExpensesItems({ expenses, setExpenses, budget, setBudget }) {
                 className="text-red-500 hover:text-red-700 transition-colors"
                 title="Delete expense"
               >
-                <Trash2 size={20} />
+                <Trash2 size={22} />
               </button>
             </div>
           </li>
         ))}
       </ul>
 
-      {/* 🗑️ Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
       {isModalOpen && selectedExpense && (
         <>
           <div
-            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity"
             onClick={closeModal}
           ></div>
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 pointer-events-auto">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 pointer-events-auto animate-slide-up">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-green-700">Delete Expense</h2>
+                <h2 className="text-2xl font-bold text-red-600">Delete Expense</h2>
                 <button
                   onClick={closeModal}
-                  className="text-green-500 hover:text-green-700 text-2xl font-bold"
+                  className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
                 >
                   ×
                 </button>
               </div>
 
-              <p className="mb-4 text-gray-700">
+              <p className="mb-3 text-gray-700 text-sm">
                 Are you sure you want to delete <strong>{selectedExpense.name}</strong>?
               </p>
 
-              {/* ✅ Show date inside modal */}
+              {selectedExpense.budgetName && (
+                <p className="mb-3 text-xs text-indigo-600 font-medium">
+                  Budget: {selectedExpense.budgetName}
+                </p>
+              )}
+
               {selectedExpense.date && (
-                <p className="text-sm text-gray-500 mb-6">
+                <p className="mb-6 text-xs text-gray-500">
                   Date:{" "}
                   {new Date(selectedExpense.date).toLocaleDateString('en-US', {
                     weekday: 'short',
@@ -141,7 +147,7 @@ function ExpensesItems({ expenses, setExpenses, budget, setBudget }) {
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors"
+                  className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors"
                 >
                   Delete
                 </button>

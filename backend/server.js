@@ -70,20 +70,30 @@ app.delete('/budgets/:id', (req, res) => {
 
 /* ------------------ EXPENSE ROUTES ------------------ */
 
-// ✅ Get all expenses (newest → oldest)
+// ✅ Get all expenses with budget name
 app.get('/expenses', (req, res) => {
-  const query = 'SELECT * FROM expenses ORDER BY date DESC, id DESC';
+  const query = `
+    SELECT e.*, b.name AS budgetName
+    FROM expenses e
+    LEFT JOIN budgets b ON e.budgetId = b.id
+    ORDER BY e.date DESC, e.id DESC
+  `;
   db.query(query, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
   });
 });
 
-// ✅ Get expenses by specific budget
+// ✅ Get expenses by specific budget with budget name
 app.get('/expenses/:budgetId', (req, res) => {
   const { budgetId } = req.params;
-  const query =
-    'SELECT * FROM expenses WHERE budgetId = ? ORDER BY date DESC, id DESC';
+  const query = `
+    SELECT e.*, b.name AS budgetName
+    FROM expenses e
+    LEFT JOIN budgets b ON e.budgetId = b.id
+    WHERE e.budgetId = ?
+    ORDER BY e.date DESC, e.id DESC
+  `;
   db.query(query, [budgetId], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
