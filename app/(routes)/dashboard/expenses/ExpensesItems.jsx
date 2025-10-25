@@ -3,10 +3,14 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Trash2 } from 'lucide-react';
+import { useUser } from '@clerk/nextjs';
 
-function ExpensesItems({ expenses, setExpenses, budget, setBudget }) {
+function ExpensesItems({ expenses, setExpenses, budget, setBudget, refreshData }) {
+  const { user } = useUser();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState(null);
+
+  const userEmail = user?.emailAddresses?.[0]?.emailAddress;
 
   const openModal = (expense) => {
     setSelectedExpense(expense);
@@ -22,23 +26,20 @@ function ExpensesItems({ expenses, setExpenses, budget, setBudget }) {
     if (!selectedExpense) return;
 
     try {
-      const res = await axios.delete(`http://localhost:5000/expenses/${selectedExpense.id}`);
-      const newExpenses = expenses.filter(e => e.id !== selectedExpense.id);
-      setExpenses(newExpenses);
+      const res = await axios.delete(
+        `http://localhost:5000/expenses/${selectedExpense.id}`
+      );
+      toast.success(res.data.message || 'Expense deleted successfully');
 
-      if (budget) {
-        const updatedBudget = {
-          ...budget,
-          amount: (parseFloat(budget.amount) + parseFloat(selectedExpense.amount)).toFixed(2),
-        };
-        setBudget(updatedBudget);
-      }
+      // Remove expense from state
+      setExpenses(prev => prev.filter(e => e.id !== selectedExpense.id));
 
-      toast.success(res.data.message || "Expense deleted successfully");
+      // Refetch full data from backend to sync budget and expenses
+      if (refreshData) await refreshData();
       closeModal();
     } catch (err) {
-      console.error("Error deleting expense:", err);
-      toast.error("Error deleting expense. Please try again.");
+      console.error('Error deleting expense:', err);
+      toast.error('Error deleting expense. Please try again.');
       closeModal();
     }
   };
@@ -51,23 +52,34 @@ function ExpensesItems({ expenses, setExpenses, budget, setBudget }) {
     );
   }
 
+  // Filter expenses by current user if available
+  const filteredExpenses = userEmail
+    ? expenses.filter(exp => exp.budgetOwner === userEmail)
+    : expenses;
+
+  if (filteredExpenses.length === 0) {
+    return (
+      <p className="text-gray-500 text-center py-6 text-lg">
+        No expenses found for your account
+      </p>
+    );
+  }
+
   return (
     <div className="relative">
       <ul className="flex flex-col gap-4">
-        {expenses.map(exp => (
+        {filteredExpenses.map(exp => (
           <li
             key={exp.id}
-            className="flex justify-between items-center bg-linear-to-r from-white to-gray-50 shadow-md hover:shadow-xl rounded-2xl p-5 transition-all border border-gray-100"
+            className="flex justify-between items-center bg-white shadow-md hover:shadow-xl rounded-2xl p-5 transition-all border border-gray-100"
           >
             <div className="flex flex-col gap-1">
               <span className="font-semibold text-lg text-green-600">{exp.name}</span>
-              
               {exp.budgetName && (
                 <span className="text-xs font-medium text-indigo-600 bg-indigo-100 px-2 py-1 rounded-full w-fit">
                   {exp.budgetName}
                 </span>
               )}
-
               {exp.date && (
                 <span className="text-gray-400 text-sm">
                   {new Date(exp.date).toLocaleDateString('en-US', {
@@ -84,7 +96,6 @@ function ExpensesItems({ expenses, setExpenses, budget, setBudget }) {
               <span className="font-semibold text-green-600 text-lg">
                 ${parseFloat(exp.amount).toFixed(2)}
               </span>
-
               <button
                 onClick={() => openModal(exp)}
                 className="text-red-500 hover:text-red-700 transition-colors"
@@ -97,7 +108,7 @@ function ExpensesItems({ expenses, setExpenses, budget, setBudget }) {
         ))}
       </ul>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Modal */}
       {isModalOpen && selectedExpense && (
         <>
           <div

@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 
-function BudgetItem({ budget, expenses = [] }) {
+function BudgetItem({ budget, expenses = [], setExpenses }) {
   const router = useRouter();
 
   const handleClick = () => {
@@ -39,7 +39,7 @@ function BudgetItem({ budget, expenses = [] }) {
 
       <div className="bg-gray-200 h-3 rounded-full overflow-hidden">
         <div
-          className="h-3 bg-gradient-to-r from-green-400 to-green-600 rounded-full transition-all duration-500"
+          className="h-3 bg-linear-to-r from-green-400 to-green-600 rounded-full transition-all duration-500"
           style={{ width: `${progress}%` }}
         />
       </div>

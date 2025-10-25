@@ -12,13 +12,13 @@ const db = mysql.createConnection({
 
 db.connect((err) => {
   if (err) {
-    console.error("Error connecting to MySQL:", err);
+    console.error("❌ Error connecting to MySQL:", err);
   } else {
-    console.log("Connected to MySQL database!");
+    console.log("✅ Connected to MySQL database!");
   }
 });
 
-// ✅ Create budgets table with new `date` column
+// ✅ Create budgets table
 const createBudgetsTableQuery = `
 CREATE TABLE IF NOT EXISTS budgets (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -26,19 +26,16 @@ CREATE TABLE IF NOT EXISTS budgets (
   amount VARCHAR(50) NOT NULL,
   icon VARCHAR(100),
   created_by VARCHAR(255) NOT NULL,
-  date DATE DEFAULT (CURRENT_DATE)  -- Added date column with default value as today's date
+  date DATE DEFAULT (CURRENT_DATE)
 );
 `;
 
-db.query(createBudgetsTableQuery, (err, result) => {
-  if (err) {
-    console.error("Error creating budgets table:", err);
-  } else {
-    console.log("Budgets table created or already exists");
-  }
+db.query(createBudgetsTableQuery, (err) => {
+  if (err) console.error("Error creating budgets table:", err);
+  else console.log("✅ Budgets table ready");
 });
 
-// ✅ Create expenses table with `date` column
+// ✅ Create expenses table
 const createExpensesTableQuery = `
 CREATE TABLE IF NOT EXISTS expenses (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -46,17 +43,14 @@ CREATE TABLE IF NOT EXISTS expenses (
   amount VARCHAR(50) NOT NULL,
   budgetId INT NOT NULL,
   created_by VARCHAR(255) NOT NULL,
-  date DATE DEFAULT (CURRENT_DATE),  -- Added date column with default as today's date
+  date DATE DEFAULT (CURRENT_DATE),
   FOREIGN KEY (budgetId) REFERENCES budgets(id) ON DELETE CASCADE
 );
 `;
 
-db.query(createExpensesTableQuery, (err, result) => {
-  if (err) {
-    console.error("Error creating expenses table:", err);
-  } else {
-    console.log("Expenses table created or already exists");
-  }
+db.query(createExpensesTableQuery, (err) => {
+  if (err) console.error("Error creating expenses table:", err);
+  else console.log("✅ Expenses table ready");
 });
 
 module.exports = db;

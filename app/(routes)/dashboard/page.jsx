@@ -3,8 +3,10 @@ import React, { useEffect, useState } from 'react';
 import ExpensesItems from './expenses/ExpensesItems';
 import ExpensesBudgetBar from './Expenses_budget_bar';
 import ExpensesBasedOnDate from './expenses_based_on_date';
+import { useUser } from '@clerk/nextjs'; // adjust if using different auth
 
 export default function DashboardLayout() {
+  const { user } = useUser(); // get logged-in user info
   const [budgets, setBudgets] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,10 +14,13 @@ export default function DashboardLayout() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!user) return; // don't fetch if not logged in
+
       try {
+        const email = user.emailAddresses[0].emailAddress; // or user.id if you store user IDs
         const [budgetRes, expenseRes] = await Promise.all([
-          fetch('http://localhost:5000/budgets'),
-          fetch('http://localhost:5000/expenses'),
+          fetch(`http://localhost:5000/budgets?created_by=${email}`),
+          fetch(`http://localhost:5000/expenses?created_by=${email}`),
         ]);
 
         if (!budgetRes.ok || !expenseRes.ok) {
@@ -36,7 +41,16 @@ export default function DashboardLayout() {
     };
 
     fetchData();
-  }, []);
+  }, [user]);
+
+  if (!user)
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-yellow-50">
+        <p className="text-yellow-700 font-semibold">
+          Please log in to view your dashboard.
+        </p>
+      </div>
+    );
 
   if (loading)
     return (
@@ -64,7 +78,7 @@ export default function DashboardLayout() {
   );
 
   return (
-    <div className="p-8 bg-linear-to-br from-green-50 via-white to-green-100 min-h-screen space-y-8">
+    <div className="p-8 bg-green-50 min-h-screen space-y-8">
       <h1 className="text-4xl font-extrabold text-green-800 text-center mb-6 drop-shadow-sm">
         💰 Smart Finance Dashboard
       </h1>

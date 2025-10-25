@@ -2,16 +2,21 @@
 import React, { useEffect, useState } from 'react';
 import ExpensesList from './ExpensesList';
 import ExpensesItems from './ExpensesItems';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import BudgetItem from '../budgets/_components/BudgetItem';
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
 import { Trash2, Edit3, Smile } from 'lucide-react';
-import Picker from 'emoji-picker-react'; // 👈 Emoji Picker
+import Picker from 'emoji-picker-react';
+import { useUser } from '@clerk/nextjs';
 
 function Page() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { user } = useUser();
+  const userEmail = user?.emailAddresses?.[0]?.emailAddress;
+
   const budgetId = parseInt(searchParams.get('budgetId'));
   const [budget, setBudget] = useState(null);
   const [expenses, setExpenses] = useState([]);
@@ -21,36 +26,37 @@ function Page() {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', icon: '', amount: '' });
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const budgetsRes = await axios.get('http://localhost:5000/budgets');
-        const budgets = budgetsRes.data;
+  /* -------------------- Fetch Budgets + Expenses -------------------- */
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [budgetsRes, expensesRes] = await Promise.all([
+        axios.get('http://localhost:5000/budgets'),
+        axios.get('http://localhost:5000/expenses', { params: { created_by: userEmail } }),
+      ]);
 
-        if (budgetId) {
-          const selectedBudget = budgets.find(b => b.id === budgetId);
-          setBudget(selectedBudget || null);
-        } else {
-          setBudget(null);
-        }
+      const budgets = budgetsRes.data;
+      const selectedBudget = budgetId
+        ? budgets.find((b) => b.id === budgetId)
+        : budgets[0] || null;
 
-        const expensesRes = await axios.get('http://localhost:5000/expenses');
-        let filtered = expensesRes.data;
+      setBudget(selectedBudget);
 
-        if (budgetId) {
-          filtered = filtered.filter(e => e.budgetId === budgetId);
-        }
+      let filteredExpenses = expensesRes.data;
+      if (budgetId) filteredExpenses = filteredExpenses.filter((e) => e.budgetId === budgetId);
 
-        setExpenses(filtered);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-      } finally {
-        setLoading(false);
-      }
+      setExpenses(filteredExpenses);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      toast.error('Failed to load data');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    fetchData();
-  }, [budgetId]);
+  useEffect(() => {
+    if (userEmail) fetchData();
+  }, [budgetId, userEmail]);
 
   /* ---------------------- DELETE BUDGET ---------------------- */
   const handleDeleteBudget = async () => {
@@ -61,6 +67,7 @@ function Page() {
       setBudget(null);
       setExpenses([]);
       setIsDeleteModalOpen(false);
+      router.push('/dashboard/expenses');
     } catch (err) {
       console.error('Error deleting budget:', err);
       toast.error('Error deleting budget. Please try again.');
@@ -70,6 +77,7 @@ function Page() {
 
   /* ---------------------- EDIT BUDGET ---------------------- */
   const openEditModal = () => {
+    if (!budget) return;
     setEditForm({
       name: budget.name,
       icon: budget.icon || '',
@@ -83,7 +91,7 @@ function Page() {
     try {
       const res = await axios.put(`http://localhost:5000/budgets/${budget.id}`, editForm);
       toast.success(res.data.message || 'Budget updated successfully');
-      setBudget({ ...budget, ...editForm });
+      setBudget(prev => ({ ...prev, ...editForm }));
       setIsEditModalOpen(false);
     } catch (err) {
       console.error('Error updating budget:', err);
@@ -91,24 +99,40 @@ function Page() {
     }
   };
 
+  /* ---------------------- EXPENSE HANDLERS ---------------------- */
+  const handleDeleteExpense = async (id) => {
+    try {
+      await axios.delete(`http://localhost:5000/expenses/${id}`);
+      setExpenses(prev => prev.filter(exp => exp.id !== id));
+      toast.success('Expense deleted');
+    } catch (err) {
+      toast.error('Failed to delete expense');
+    }
+  };
+
+  const handleAddExpense = (newExpense) => {
+    setExpenses(prev => [newExpense, ...prev]);
+  };
+
+  const handleEditExpense = (updatedExpense) => {
+    setExpenses(prev => prev.map(exp => exp.id === updatedExpense.id ? updatedExpense : exp));
+  };
+
   if (loading)
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-green-50">
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-green-500 mb-4"></div>
-        <p className="text-green-700 text-lg font-semibold">
-          Loading your expenses...
-        </p>
+        <p className="text-green-700 text-lg font-semibold">Loading your expenses...</p>
       </div>
     );
 
   return (
     <div className="p-8 bg-green-50 min-h-screen">
-      <Toaster position="below-right" />
+      <Toaster position="bottom-right" />
       <h1 className="text-3xl font-bold text-green-800 mb-8 border-b-2 border-green-200 pb-2">
-        My All Expenses
+        My Expenses
       </h1>
 
-      {/* ✅ Buttons moved BELOW the border line */}
       {budget && (
         <div className="flex justify-end gap-3 mb-2">
           <button
@@ -142,25 +166,26 @@ function Page() {
               budget={budget}
               expenses={expenses}
               setExpenses={setExpenses}
+              onExpenseAdded={handleAddExpense}
+              onExpenseEdited={handleEditExpense}
+              refreshData={fetchData}
             />
           </div>
         </div>
       )}
 
-      {/* ✅ Expenses Section */}
       <div className="bg-white shadow-lg rounded-2xl p-6 border border-green-200">
-        <h3 className="text-xl font-semibold mb-4 text-green-800">
-          Latest Expenses
-        </h3>
+        <h3 className="text-xl font-semibold mb-4 text-green-800">Latest Expenses</h3>
         <ExpensesItems
           expenses={expenses}
           setExpenses={setExpenses}
           budget={budget}
           setBudget={setBudget}
+          refreshData={fetchData}
         />
       </div>
 
-      {/* 🗑️ Delete Modal */}
+      {/* Delete Modal */}
       {isDeleteModalOpen && budget && (
         <>
           <div
@@ -179,8 +204,7 @@ function Page() {
                 </button>
               </div>
               <p className="mb-4 text-gray-700">
-                Are you sure you want to delete the budget{' '}
-                <strong>{budget.name}</strong> and all its expenses?
+                Are you sure you want to delete the budget <strong>{budget.name}</strong> and all its expenses?
               </p>
               <div className="flex justify-end gap-3">
                 <button
@@ -201,7 +225,7 @@ function Page() {
         </>
       )}
 
-      {/* ✏️ Edit Modal with Emoji Picker */}
+      {/* Edit Modal */}
       {isEditModalOpen && budget && (
         <>
           <div
@@ -224,11 +248,8 @@ function Page() {
               </div>
 
               <form onSubmit={handleEditBudget} className="flex flex-col gap-4">
-                {/* Budget Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
-                    Budget Name
-                  </label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Budget Name</label>
                   <input
                     type="text"
                     value={editForm.name}
@@ -238,11 +259,8 @@ function Page() {
                   />
                 </div>
 
-                {/* Emoji Picker */}
                 <div className="relative">
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
-                    Icon
-                  </label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Icon</label>
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{editForm.icon || '🌿'}</span>
                     <button
@@ -265,11 +283,8 @@ function Page() {
                   )}
                 </div>
 
-                {/* Amount */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
-                    Amount
-                  </label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Amount</label>
                   <input
                     type="number"
                     step="0.01"
