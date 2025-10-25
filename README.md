@@ -111,17 +111,6 @@ npm run dev
 
 The backend server will run on `http://localhost:5000`.
 
----
-
-## Database Setup
-
-1. Ensure MySQL is installed and running.
-2. Create a database:
-
-```sql
-CREATE DATABASE moneymap;
-```
-
 3. Use Drizzle ORM to push migrations from the frontend:
 
 ```bash
@@ -170,7 +159,3 @@ This project is licensed under the **ISC License**.
 
 ---
 
-## Contact
-
-GitHub: [durjoybarua5327/MoneyMap](https://github.com/durjoybarua5327/MoneyMap)
-Email: *(Add yo
