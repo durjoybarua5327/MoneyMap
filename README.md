@@ -1,36 +1,176 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# MoneyMap
+
+MoneyMap is a personal finance management web application that allows users to track budgets, expenses, and financial activities. It features a modern **Next.js** frontend with Tailwind CSS and a **Node.js + Express** backend with **MySQL** database support.
+
+---
+
+## Table of Contents
+
+* [Features](#features)
+* [Tech Stack](#tech-stack)
+* [Getting Started](#getting-started)
+
+  * [Frontend](#frontend)
+  * [Backend](#backend)
+* [Database Setup](#database-setup)
+* [Scripts](#scripts)
+* [Contributing](#contributing)
+* [License](#license)
+* [Contact](#contact)
+
+---
+
+## Features
+
+* User authentication with Clerk (`@clerk/nextjs`)
+* Interactive dashboards and charts using Recharts
+* Emoji support for transaction entries (`emoji-picker-react`)
+* Calendar view for tracking expenses (`react-calendar`)
+* Responsive and customizable UI with Tailwind CSS and Radix UI
+* CRUD operations for budgets and transactions
+
+---
+
+## Tech Stack
+
+**Frontend:**
+
+* Next.js 16
+* React 19
+* Tailwind CSS 4
+* Recharts, React Calendar, Heroicons, Lucide Icons
+* Clerk for authentication
+* Drizzle ORM for database integration
+
+**Backend:**
+
+* Node.js
+* Express.js 5
+* MySQL2
+* CORS & dotenv for environment management
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Frontend
+
+1. Navigate to the frontend directory:
+
+```bash
+cd my-app
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Create a `.env` file based on `.env.example` (include Clerk credentials and database URL).
+
+4. Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app should be accessible at `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Backend
 
-## Learn More
+1. Navigate to the backend directory:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+cd backend
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. Install dependencies:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm install
+```
 
-## Deploy on Vercel
+3. Create a `.env` file and add your MySQL credentials:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```env
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=yourpassword
+DB_NAME=moneymap
+PORT=5000
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+4. Start the server:
+
+```bash
+npm run dev
+```
+
+The backend server will run on `http://localhost:5000`.
+
+---
+
+## Database Setup
+
+1. Ensure MySQL is installed and running.
+2. Create a database:
+
+```sql
+CREATE DATABASE moneymap;
+```
+
+3. Use Drizzle ORM to push migrations from the frontend:
+
+```bash
+cd my-app
+npm run db:push
+```
+
+4. You can also explore the database using Drizzle Studio:
+
+```bash
+npm run db:studio
+```
+
+---
+
+## Scripts
+
+### Frontend
+
+| Script              | Description                             |
+| ------------------- | --------------------------------------- |
+| `npm run dev`       | Starts the frontend in development mode |
+| `npm run build`     | Builds the frontend for production      |
+| `npm run start`     | Starts the production server            |
+| `npm run db:push`   | Pushes database migrations              |
+| `npm run db:studio` | Opens Drizzle Studio                    |
+
+### Backend
+
+| Script        | Description                            |
+| ------------- | -------------------------------------- |
+| `npm run dev` | Starts the backend server with nodemon |
+| `npm start`   | Starts the backend server              |
+
+---
+
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request.
+
+---
+
+## License
+
+This project is licensed under the **ISC License**.
+
+---
+
+## Contact
+
+GitHub: [durjoybarua5327/MoneyMap](https://github.com/durjoybarua5327/MoneyMap)
+Email: *(Add yo
