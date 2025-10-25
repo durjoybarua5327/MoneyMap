@@ -6,6 +6,9 @@ import { useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import BudgetItem from '../budgets/_components/BudgetItem';
 import { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
+import { Trash2, Edit3, Smile } from 'lucide-react';
+import Picker from 'emoji-picker-react'; // 👈 Emoji Picker
 
 function Page() {
   const searchParams = useSearchParams();
@@ -13,6 +16,10 @@ function Page() {
   const [budget, setBudget] = useState(null);
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', icon: '', amount: '' });
 
   useEffect(() => {
     async function fetchData() {
@@ -45,6 +52,45 @@ function Page() {
     fetchData();
   }, [budgetId]);
 
+  /* ---------------------- DELETE BUDGET ---------------------- */
+  const handleDeleteBudget = async () => {
+    if (!budget) return;
+    try {
+      const res = await axios.delete(`http://localhost:5000/budgets/${budget.id}`);
+      toast.success(res.data.message || 'Budget deleted successfully');
+      setBudget(null);
+      setExpenses([]);
+      setIsDeleteModalOpen(false);
+    } catch (err) {
+      console.error('Error deleting budget:', err);
+      toast.error('Error deleting budget. Please try again.');
+      setIsDeleteModalOpen(false);
+    }
+  };
+
+  /* ---------------------- EDIT BUDGET ---------------------- */
+  const openEditModal = () => {
+    setEditForm({
+      name: budget.name,
+      icon: budget.icon || '',
+      amount: budget.amount,
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditBudget = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await axios.put(`http://localhost:5000/budgets/${budget.id}`, editForm);
+      toast.success(res.data.message || 'Budget updated successfully');
+      setBudget({ ...budget, ...editForm });
+      setIsEditModalOpen(false);
+    } catch (err) {
+      console.error('Error updating budget:', err);
+      toast.error('Error updating budget. Please try again.');
+    }
+  };
+
   if (loading)
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-green-50">
@@ -61,6 +107,24 @@ function Page() {
       <h1 className="text-3xl font-bold text-green-800 mb-8 border-b-2 border-green-200 pb-2">
         My All Expenses
       </h1>
+
+      {/* ✅ Buttons moved BELOW the border line */}
+      {budget && (
+        <div className="flex justify-end gap-3 mb-2">
+          <button
+            onClick={openEditModal}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 transition"
+          >
+            <Edit3 size={18} /> Edit Budget
+          </button>
+          <button
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition"
+          >
+            <Trash2 size={18} /> Delete Budget
+          </button>
+        </div>
+      )}
 
       {budget && (
         <div className="flex flex-col md:flex-row items-start gap-8 mb-8">
@@ -83,6 +147,7 @@ function Page() {
         </div>
       )}
 
+      {/* ✅ Expenses Section */}
       <div className="bg-white shadow-lg rounded-2xl p-6 border border-green-200">
         <h3 className="text-xl font-semibold mb-4 text-green-800">
           Latest Expenses
@@ -94,6 +159,147 @@ function Page() {
           setBudget={setBudget}
         />
       </div>
+
+      {/* 🗑️ Delete Modal */}
+      {isDeleteModalOpen && budget && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+            onClick={() => setIsDeleteModalOpen(false)}
+          ></div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 pointer-events-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-green-700">Delete Budget</h2>
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="text-green-500 hover:text-green-700 text-2xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+              <p className="mb-4 text-gray-700">
+                Are you sure you want to delete the budget{' '}
+                <strong>{budget.name}</strong> and all its expenses?
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteBudget}
+                  className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ✏️ Edit Modal with Emoji Picker */}
+      {isEditModalOpen && budget && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+            onClick={() => {
+              setIsEditModalOpen(false);
+              setIsEmojiPickerOpen(false);
+            }}
+          ></div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 pointer-events-auto relative">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-green-700">Edit Budget</h2>
+                <button
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="text-green-500 hover:text-green-700 text-2xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+
+              <form onSubmit={handleEditBudget} className="flex flex-col gap-4">
+                {/* Budget Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                    Budget Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-400 outline-none"
+                    required
+                  />
+                </div>
+
+                {/* Emoji Picker */}
+                <div className="relative">
+                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                    Icon
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{editForm.icon || '🌿'}</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+                      className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-md flex items-center gap-1 text-gray-600"
+                    >
+                      <Smile size={18} /> Choose
+                    </button>
+                  </div>
+                  {isEmojiPickerOpen && (
+                    <div className="absolute z-50 mt-2">
+                      <Picker
+                        onEmojiClick={(emojiData) => {
+                          setEditForm({ ...editForm, icon: emojiData.emoji });
+                          setIsEmojiPickerOpen(false);
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Amount */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                    Amount
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editForm.amount}
+                    onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-400 outline-none"
+                    required
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
