@@ -33,16 +33,7 @@ function Hero() {
                 </div>
             </div>
 
-            {/* Image Section */}
-            <div className="flex justify-center px-4 pb-16 sm:pb-24 lg:pb-32">
-                <Image
-                    src="/dashboard.png"
-                    alt="Dashboard Image"
-                    width={1000}
-                    height={600}
-                    className="w-full h-auto"
-                />
-            </div>
+        
         </section>
     )
 }

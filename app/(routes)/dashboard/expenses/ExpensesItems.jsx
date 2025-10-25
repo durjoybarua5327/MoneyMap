@@ -49,7 +49,7 @@ function ExpensesItems({ expenses, setExpenses, budget, setBudget }) {
     }
   };
 
-  if (expenses.length === 0) {
+  if (!expenses || expenses.length === 0) {
     return (
       <p className="text-gray-500 text-center py-6">
         No expenses found
