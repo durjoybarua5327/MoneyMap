@@ -12,7 +12,6 @@ MoneyMap is a personal finance management web application that allows users to t
 
   * [Frontend](#frontend)
   * [Backend](#backend)
-* [Database Setup](#database-setup)
 * [Scripts](#scripts)
 * [Contributing](#contributing)
 * [License](#license)
