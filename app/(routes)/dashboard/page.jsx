@@ -82,8 +82,6 @@ export default function DashboardLayout() {
       <h1 className="text-4xl font-extrabold text-green-800 text-center mb-6 drop-shadow-sm">
         💰 Smart Finance Dashboard
       </h1>
-
-      {/* Top Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white shadow-lg rounded-2xl p-6 text-center hover:scale-105 transition-transform">
           <h3 className="font-semibold text-gray-500">Total Budget</h3>

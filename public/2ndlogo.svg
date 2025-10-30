@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="50" viewBox="0 0 420 120" role="img" aria-labelledby="title desc">
+  <title id="title">MoneyMap logo</title>
+  <desc id="desc">A logo combining a map pin and dollar sign with map lines and the word MoneyMap in one line.</desc>
+
+  <!-- Icon: map pin with dollar sign and subtle map lines -->
+  <g transform="translate(20,10)">
+    <!-- map-ish base -->
+    <g opacity="0.16" transform="translate(6,8)">
+      <path d="M10 10 L70 2 L102 20 L102 82 L70 100 L10 92 Z" fill="#2b7a43"/>
+      <path d="M38 6 L38 100" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.12"/>
+      <path d="M70 2 L70 100" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.12"/>
+    </g>
+
+    <!-- pin outer -->
+    <g transform="translate(0,0)">
+      <path d="M56 8
+               C40 8,28 20,28 36
+               C28 66,56 96,56 96
+               C56 96,84 66,84 36
+               C84 20,72 8,56 8 Z"
+            fill="#2b7a43"/>
+      <!-- inner circle -->
+      <circle cx="56" cy="36" r="18" fill="#ffffff"/>
+      <!-- dollar sign -->
+      <path d="M56 26
+               C50 26,48 28,48 32
+               C48 36,52 36,56 38
+               C62 40,64 42,64 46
+               C64 50,60 52,56 54
+               C62 56,66 58,66 62
+               M52 20 L60 20"
+            stroke="#2b7a43" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <!-- small highlight on pin -->
+      <path d="M46 18 C48 14,52 12,58 12" stroke="#ffffff" stroke-width="2" opacity="0.18" fill="none"/>
+    </g>
+
+    <!-- subtle map route line -->
+    <path d="M6 86 C26 76,42 82,56 80 C72 78,88 84,102 76" stroke="#2b7a43" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.35" fill="none"/>
+  </g>
+
+  <!-- Wordmark: MoneyMap in one line -->
+  <text x="150" y="75" font-family="Inter, Arial, Helvetica, sans-serif" font-weight="700" font-size="42" fill="#2b7a43">MoneyMap</text>
+</svg>
