@@ -1,7 +1,20 @@
 # MoneyMap
 
+
+
 MoneyMap is a personal finance management web application that allows users to track budgets, expenses, and financial activities. It features a modern **Next.js** frontend with Tailwind CSS and a **Node.js + Express** backend with **MySQL** database support.
 
+<div align="center">
+  <h3>Project Demos</h3>
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0;">
+    <img src="demos/image0.png" alt="MoneyMap Demo 1" width="250" style="border-radius: 8px"/>
+    <img src="demos/image1.png" alt="MoneyMap Demo 2" width="250" style="border-radius: 8px"/>
+    <img src="demos/image2.png" alt="MoneyMap Demo 3" width="250" style="border-radius: 8px"/>
+    <img src="demos/image3.png" alt="MoneyMap Demo 4" width="250" style="border-radius: 8px"/>
+    <img src="demos/image4.png" alt="MoneyMap Demo 5" width="250" style="border-radius: 8px"/>
+    <img src="demos/image5.png" alt="MoneyMap Demo 6" width="250" style="border-radius: 8px"/>
+  </div>
+</div>
 ---
 
 ## Table of Contents
