@@ -1,7 +1,5 @@
 # MoneyMap
 
-
-
 MoneyMap is a personal finance management web application that allows users to track budgets, expenses, and financial activities. It features a modern **Next.js** frontend with Tailwind CSS and a **Node.js + Express** backend with **MySQL** database support.
 
 <div align="center">
